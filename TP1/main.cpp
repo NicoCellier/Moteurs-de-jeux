@@ -67,8 +67,32 @@ int main(int argc, char *argv[])
     app.setApplicationName("cube");
     app.setApplicationVersion("0.1");
 #ifndef QT_NO_OPENGL
-    MainWidget widget;
+    MainWidget widget(1000);
     widget.show();
+    MainWidget widget2(100);
+    widget2.show();
+    MainWidget widget3(10);
+    widget3.show();
+    MainWidget widget4(1);
+    widget4.show();
+
+    QObject::connect(&widget, SIGNAL(angularSpeedChanged(int)), &widget2, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget, SIGNAL(angularSpeedChanged(int)), &widget3, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget, SIGNAL(angularSpeedChanged(int)), &widget4, SLOT(setAngularSpeed(int)));
+
+    QObject::connect(&widget2, SIGNAL(angularSpeedChanged(int)), &widget, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget2, SIGNAL(angularSpeedChanged(int)), &widget3, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget2, SIGNAL(angularSpeedChanged(int)), &widget4, SLOT(setAngularSpeed(int)));
+
+    QObject::connect(&widget3, SIGNAL(angularSpeedChanged(int)), &widget, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget3, SIGNAL(angularSpeedChanged(int)), &widget2, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget3, SIGNAL(angularSpeedChanged(int)), &widget4, SLOT(setAngularSpeed(int)));
+
+    QObject::connect(&widget4, SIGNAL(angularSpeedChanged(int)), &widget, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget4, SIGNAL(angularSpeedChanged(int)), &widget2, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget4, SIGNAL(angularSpeedChanged(int)), &widget3, SLOT(setAngularSpeed(int)));
+
+
 #else
     QLabel note("OpenGL Support required");
     note.show();

@@ -48,63 +48,55 @@
 **
 ****************************************************************************/
 
-#ifndef MAINWIDGET_H
-#define MAINWIDGET_H
+#include <QApplication>
+#include <QLabel>
+#include <QSurfaceFormat>
 
-#include "geometryengine.h"
+#ifndef QT_NO_OPENGL
+#include "mainwidget.h"
+#endif
 
-#include <QOpenGLWidget>
-#include <QOpenGLFunctions>
-#include <QMatrix4x4>
-#include <QQuaternion>
-#include <QVector2D>
-#include <QBasicTimer>
-#include <QOpenGLShaderProgram>
-#include <QOpenGLTexture>
-
-class GeometryEngine;
-
-class MainWidget : public QOpenGLWidget, protected QOpenGLFunctions
+int main(int argc, char *argv[])
 {
-    Q_OBJECT
+    QApplication app(argc, argv);
 
-public:
-    explicit MainWidget(int fps, QWidget *parent = 0);
-    ~MainWidget();
-public slots:
-    void setAngularSpeed(int value);
-signals:
-    void angularSpeedChanged(int newValue);
+    QSurfaceFormat format;
+    format.setDepthBufferSize(24);
+    QSurfaceFormat::setDefaultFormat(format);
 
-protected:
-    void mousePressEvent(QMouseEvent *e) override;
-    void mouseReleaseEvent(QMouseEvent *e) override;
-    void timerEvent(QTimerEvent *e) override;
-    void keyPressEvent(QKeyEvent *e) override;
-    void wheelEvent(QWheelEvent *e) override;
+    app.setApplicationName("cube");
+    app.setApplicationVersion("0.1");
+#ifndef QT_NO_OPENGL
+    
+    MainWidget widget(1000);
+    widget.show();
+    MainWidget widget2(100);
+    widget2.show();
+    MainWidget widget3(10);
+    widget3.show();
+    MainWidget widget4(1);
+    widget4.show();
 
-    void initializeGL() override;
-    void resizeGL(int w, int h) override;
-    void paintGL() override;
+    QObject::connect(&widget, SIGNAL(angularSpeedChanged(int)), &widget2, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget, SIGNAL(angularSpeedChanged(int)), &widget3, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget, SIGNAL(angularSpeedChanged(int)), &widget4, SLOT(setAngularSpeed(int)));
 
-    void initShaders();
-    void initTextures();
+    QObject::connect(&widget2, SIGNAL(angularSpeedChanged(int)), &widget, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget2, SIGNAL(angularSpeedChanged(int)), &widget3, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget2, SIGNAL(angularSpeedChanged(int)), &widget4, SLOT(setAngularSpeed(int)));
 
-private:
-    QBasicTimer timer;
-    QOpenGLShaderProgram program;
-    GeometryEngine *geometries;
+    QObject::connect(&widget3, SIGNAL(angularSpeedChanged(int)), &widget, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget3, SIGNAL(angularSpeedChanged(int)), &widget2, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget3, SIGNAL(angularSpeedChanged(int)), &widget4, SLOT(setAngularSpeed(int)));
 
-    QOpenGLTexture *texture;
+    QObject::connect(&widget4, SIGNAL(angularSpeedChanged(int)), &widget, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget4, SIGNAL(angularSpeedChanged(int)), &widget2, SLOT(setAngularSpeed(int)));
+    QObject::connect(&widget4, SIGNAL(angularSpeedChanged(int)), &widget3, SLOT(setAngularSpeed(int)));
 
-    QMatrix4x4 projection;
 
-    QVector2D mousePressPosition;
-    QVector3D rotationAxis;
-    qreal angularSpeed;
-    QQuaternion rotation;
-    QVector3D cam ;
-    int fps ;
-};
-
-#endif // MAINWIDGET_H
+#else
+    QLabel note("OpenGL Support required");
+    note.show();
+#endif
+    return app.exec();
+}

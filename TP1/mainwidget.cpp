@@ -54,11 +54,14 @@
 
 #include <math.h>
 
-MainWidget::MainWidget(QWidget *parent) :
+MainWidget::MainWidget(int fps, QWidget *parent) :
     QOpenGLWidget(parent),
     geometries(0),
     texture(0),
-    angularSpeed(0)
+    angularSpeed(1),
+    cam(0.0,0.0,-5.0),
+    rotationAxis(0.0,0.0,1.0),
+    fps(fps)
 {
 }
 
@@ -86,7 +89,8 @@ void MainWidget::mouseReleaseEvent(QMouseEvent *e)
 
     // Rotation axis is perpendicular to the mouse position difference
     // vector
-    QVector3D n = QVector3D(diff.y(), diff.x(), 0.0).normalized();
+    //QVector3D n = QVector3D(diff.y(), diff.x(), 0.0).normalized();
+    QVector3D n = QVector3D(0.0,0.0,1.0).normalized();
 
     // Accelerate angular speed relative to the length of the mouse sweep
     qreal acc = diff.length() / 100.0;
@@ -94,27 +98,44 @@ void MainWidget::mouseReleaseEvent(QMouseEvent *e)
     // Calculate new rotation axis as weighted sum
     rotationAxis = (rotationAxis * angularSpeed + n * acc).normalized();
 
-    // Increase angular speed
-    angularSpeed += acc;
 }
 //! [0]
+
+void MainWidget::keyPressEvent(QKeyEvent *e)
+{
+    switch(e->key()){
+        case(Qt::Key_Up) :
+            setAngularSpeed(angularSpeed + 1 );
+            break ;
+        case(Qt::Key_Down) :
+            setAngularSpeed(angularSpeed -1 );
+            break ;
+
+    }
+    update();
+}
+
+void MainWidget::wheelEvent(QWheelEvent *e)
+{
+    float camSpeed = 0.1f ;
+    if (e->delta()>0) {
+        cam.setZ(cam.z()+camSpeed);
+    } else {
+        cam.setZ(cam.z()-camSpeed);
+    }
+    update();
+}
 
 //! [1]
 void MainWidget::timerEvent(QTimerEvent *)
 {
-    // Decrease angular speed (friction)
-    angularSpeed *= 0.99;
 
-    // Stop rotation when speed goes below threshold
-    if (angularSpeed < 0.01) {
-        angularSpeed = 0.0;
-    } else {
-        // Update rotation
-        rotation = QQuaternion::fromAxisAndAngle(rotationAxis, angularSpeed) * rotation;
+    // Update rotation
+    rotation = QQuaternion::fromAxisAndAngle(rotationAxis, angularSpeed) * rotation;
 
-        // Request an update
-        update();
-    }
+    // Request an update
+    update();
+
 }
 //! [1]
 
@@ -138,7 +159,9 @@ void MainWidget::initializeGL()
     geometries = new GeometryEngine;
 
     // Use QBasicTimer because its faster than QTimer
-    timer.start(12, this);
+    timer.start(fps, this);
+
+
 }
 
 //! [3]
@@ -166,7 +189,7 @@ void MainWidget::initShaders()
 void MainWidget::initTextures()
 {
     // Load cube.png image
-    texture = new QOpenGLTexture(QImage(":/cube.png").mirrored());
+    texture = new QOpenGLTexture(QImage("../TP1/heightmap-1.png"));
 
     // Set nearest filtering mode for texture minification
     texture->setMinificationFilter(QOpenGLTexture::Nearest);
@@ -187,7 +210,7 @@ void MainWidget::resizeGL(int w, int h)
     qreal aspect = qreal(w) / qreal(h ? h : 1);
 
     // Set near plane to 3.0, far plane to 7.0, field of view 45 degrees
-    const qreal zNear = 3.0, zFar = 7.0, fov = 45.0;
+    const qreal zNear = 1.0, zFar = 10.0, fov = 45.0;
 
     // Reset projection
     projection.setToIdentity();
@@ -208,15 +231,26 @@ void MainWidget::paintGL()
     // Calculate model view transformation
     QMatrix4x4 matrix;
     matrix.translate(0.0, 0.0, -5.0);
+    QQuaternion framing = QQuaternion::fromAxisAndAngle(QVector3D(1,0,0),-45.0);
+    matrix.rotate(framing);
+    matrix.translate(0.0, -1.8, 0.0);
+
     matrix.rotate(rotation);
 
     // Set modelview-projection matrix
     program.setUniformValue("mvp_matrix", projection * matrix);
-//! [6]
 
     // Use texture unit 0 which contains cube.png
     program.setUniformValue("texture", 0);
 
-    // Draw cube geometry
-    geometries->drawCubeGeometry(&program);
+    // Draw plane geometry
+    geometries->drawPlaneGeometry(&program);
+}
+
+void MainWidget::setAngularSpeed(int value)
+{
+    if (value != angularSpeed) {
+        angularSpeed = value ;
+        emit angularSpeedChanged(value);
+    }
 }
